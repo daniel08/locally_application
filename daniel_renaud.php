@@ -123,3 +123,185 @@ var_dump($people_fruits);
 echo '</pre>';
 
 /*END Excercise 2*/
+
+/*Exercise 3*/
+
+/**
+ * This may be a bit overcomplicated, but I just wanted to use some OOP since this is a demonstration of my knowledge.
+ */
+
+class Rpsls{
+
+    public $hands = ['Rock', 'Paper', 'Scissors', 'Lizard', 'Spock'];
+
+    public $computer;
+    public $player;
+    private $winner;
+    private $result;
+
+    public function __construct(){
+
+    }
+
+    public function play(){
+        $this->setPlayer();
+        $this->setComputer();
+        echo 'I played: ' . get_class($this->computer) ."\n";
+        $this->determineWinner();
+        exit();
+    }
+    /*
+     * Randomly select a hand to play
+     */
+    public function setComputer(){
+        $i = rand(0,4);
+        $this->computer = HandFactory::newHand($this->hands[$i]);
+        return $this->computer;
+    }
+
+    /*
+     * Ask for user input
+     */
+    public function setPlayer(){
+        $type = readline('Your Move: ');
+        try {
+            $this->player = HandFactory::newHand($type);
+        }
+        catch(Exception $e){
+            echo $e->getMessage(). ': '. $type ."\n";
+            $this->displayRules();
+            exit();
+        }
+
+        return $this->player;
+    }
+
+    public function determineWinner(){
+        if( $this->player->isSuperiorTo($this->computer) ){
+            $this->winner = $this->player;
+        }
+        else if( $this->computer->isSuperiorTo($this->player) ){
+            $this->winner = $this->computer;
+        }
+        $this->reportWinner();
+    }
+
+    public function reportWinner(){
+        if( $this->winner ){
+            if( $this->winner == $this->player ){
+                $res = $this->winner->reportLoser(get_class($this->computer)).'.';
+                $res .= ' You Win!';
+            }
+            if( $this->winner == $this->computer ){
+                $res = $this->winner->reportLoser(get_class($this->player)).'.';
+                $res .= ' The machines triumph :(';
+            }
+            $this->result = $res;
+        }
+        else{
+            if( get_class($this->computer) == get_class($this->player) ){
+                $this->result = get_class($this->computer) . ' ties ' . get_class($this->player);
+            }
+            else{
+                $this->result = "Something went wrong";
+            }
+        }
+        echo $this->result ."\n";
+    }
+
+    public function displayRules(){
+        $rules = "===============Rules of The Game=================\n";
+
+        $rules .= "Valid hands: " . implode(', ', $this->hands) . "\n";
+
+        foreach( $this->hands as $h){
+            $t = HandFactory::newHand($h);
+            foreach($t->getBeats() as $action => $otherHand){
+                $rules .= $h . " - " . $action ." - ". $otherHand . "\n";
+            }
+        }
+        echo $rules;
+    }
+
+}
+
+class HandFactory{
+
+    public static function newHand($type){
+        $type = ucfirst(strtolower($type));
+        if( class_exists($type) ){
+            $hand = new $type();
+            if( $hand instanceof Hand){
+                return $hand;
+            }
+        }
+        throw new Exception('Invalid choice');
+    }
+
+}
+
+abstract class Hand{
+    protected $beats = [];
+
+    public function getBeats(){
+        return $this->beats;
+    }
+
+    public function isSuperiorTo($objHand){
+        if( array_search(get_class($objHand), $this->beats) ){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    public function reportLoser($loser){
+        if( $k = array_search($loser, $this->beats) ){
+            return get_class($this) . ' ' . $k .' '. $this->beats[$k];
+        }
+        else{
+            return false;
+        }
+    }
+}
+
+class Rock extends Hand{
+    public function __construct(){
+        $this->beats = ['crushes'=>'Lizard', 'smashes'=>'Scissors'];
+    }
+}
+
+class Paper extends Hand{
+    public function __construct(){
+        $this->beats = ['covers'=>'Rock', 'disproves'=>'Spock'];
+    }
+}
+
+class Scissors extends Hand{
+    public function __construct(){
+        $this->beats = ['decapitates'=>'Lizard', 'cuts'=>'Paper'];
+    }
+
+}
+
+class Lizard extends Hand{
+    public function __construct(){
+        $this->beats = ['eats'=>'Paper', 'poisons'=>'Spock'];
+    }
+}
+
+class Spock extends Hand{
+    public function __construct(){
+        $this->beats = ['smashes'=>'Scissors', 'vaporizes'=>'Rock'];
+    }
+}
+
+$Game = new Rpsls();
+if( !empty($argv) AND isset($argv[1]) AND stristr($argv[1], 'help') ){
+    $Game->displayRules();
+}else {
+    $Game->play();
+}
+
+/*END Exercise 3*/
